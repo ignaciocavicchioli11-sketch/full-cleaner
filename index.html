@@ -233,11 +233,16 @@ svg.i { width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: currentCo
 .t-sub { font-size: 12.5px; color: var(--muted); }
 
 /* ---------- Lists ---------- */
-.group { display: flex; flex-direction: column; gap: 8px; }
-.group-h { display: flex; align-items: baseline; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); padding: 0 4px; }
-.group-h .bar { width: 4px; height: 12px; border-radius: 2px; align-self: center; }
-.group-h .n { font-weight: 600; letter-spacing: 0; }
-.list { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+#pList { display: flex; flex-direction: column; gap: 26px; }
+.group { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line-2); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+.group-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0; padding: 14px 16px; background: var(--gen-soft); color: var(--gen-ink); border-bottom: 1px solid var(--line-2); }
+.group-h.bsf { background: var(--bsf-soft); color: var(--bsf-ink); }
+.group-h.kovacs { background: var(--kov-soft); color: var(--kov-ink); }
+.group-h .g-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.group-h .g-div { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.group-h .g-name { font-family: var(--f-display); font-size: 20px; font-weight: 700; line-height: 1.15; color: var(--ink); }
+.group-h .g-n { flex-shrink: 0; font-size: 13px; font-weight: 600; padding: 5px 11px; border-radius: 999px; background: var(--surface); color: var(--ink); }
+.list { background: var(--surface); }
 .row { display: grid; grid-template-columns: 40px minmax(0, 2.2fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 2.4fr) 20px; gap: 12px; align-items: center; width: 100%; padding: 11px 16px; border: none; border-top: 1px solid var(--line); background: none; text-align: left; cursor: pointer; color: var(--ink); min-height: 60px; }
 .row:first-child { border-top: none; }
 .row:hover { background: var(--surface-2); }
@@ -865,7 +870,7 @@ function refreshPersonal() {
   if (otros.length) grupos.push({ dv: '', g: 'Sin división', ts: otros });
   box.innerHTML = grupos.map(({ dv, g, ts }) => `
     <section class="group">
-      <h2 class="group-h"><span class="bar" style="background:${dv ? DIV[dv].color : 'var(--gen)'}"></span>${esc(dv ? DIV[dv].corto + ' · ' : '')}${esc(g || 'Sin área')} <span class="n">${ts.length}</span></h2>
+      <h2 class="group-h ${dv || 'general'}"><span class="g-txt"><span class="g-div">${esc(dv ? DIV[dv].nombre : 'Sin división')}</span><span class="g-name">${esc(g || 'Sin área')}</span></span><span class="g-n">${ts.length} ${ts.length === 1 ? 'persona' : 'personas'}</span></h2>
       <div class="list">${ts.map(rowTrab).join('')}</div>
     </section>`).join('');
 }
