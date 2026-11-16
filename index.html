@@ -27,17 +27,24 @@ img { max-width: 100%; }
 .login-card .brand-name span { color: var(--muted); }
 .login-card .err { color: var(--bad); font-size: 13.5px; font-weight: 500; margin: 0; }
 .soon b { overflow-wrap: anywhere; }
+.brand-logo { display: flex; flex-direction: column; gap: 6px; padding: 2px 6px 0; }
+.brand-logo img { width: 200px; max-width: 100%; height: auto; display: block; }
+.brand-logo span { font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--side-muted); padding-left: 2px; }
+.top-logo { height: 37px; width: auto; display: block; }
+.login-logo { display: block; align-self: center; }
+.login-logo img { width: 280px; max-width: 100%; height: auto; display: block; }
+.login-tag { margin: -6px 0 4px; text-align: center; font-size: 11.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
 /* Layout: barra lateral oscura fija (computador) / barra superior + menú inferior (celular); contenido en tarjetas. */
 :root {
   --bg: #F2F5F7; --surface: #FFFFFF; --surface-2: #F7F9FA; --line: #E0E6EB; --line-2: #CBD4DC;
   --ink: #0E1A24; --muted: #4A5866; --faint: #5F6D7A;
   --side: #0F1B24; --side-ink: #E3EAF0; --side-muted: #9AACBA; --side-active: #1C2E3B; --side-line: #22333F;
-  --accent: #0F766E; --accent-ink: #FFFFFF; --accent-soft: #DDF1EE; --accent-strong: #0B5E58;
+  --accent: #007CAD; --accent-ink: #FFFFFF; --accent-soft: #E0F3FB; --accent-strong: #00668F; --brand: #00A0E0;
   --bsf: #C2410C; --bsf-soft: #FFEDD5; --bsf-ink: #9A3412;
-  --kov: #1D4ED8; --kov-soft: #DBEAFE; --kov-ink: #1E40AF;
+  --kov: #7C3AED; --kov-soft: #EDE9FE; --kov-ink: #5B21B6;
   --gen: #64748B; --gen-soft: #E6EBF0; --gen-ink: #334155;
   --ok: #166534; --ok-soft: #DCFCE7; --warn: #8A3B07; --warn-soft: #FEF3C7; --bad: #991B1B; --bad-soft: #FEE2E2;
-  --none: #4A5866; --none-soft: #EDF1F4; --new: #3730A3; --new-soft: #E0E7FF;
+  --none: #4A5866; --none-soft: #EDF1F4; --new: #0F766E; --new-soft: #D5F5EF;
   --c1: #0F766E; --c2: #EA580C; --c3: #2563EB; --c4: #9333EA; --c5: #DB2777; --c6: #65A30D; --c7: #CA8A04; --c8: #475569; --c9: #0891B2; --c10: #B91C1C;
   --shadow: 0 1px 2px rgba(15, 27, 36, .05), 0 1px 1px rgba(15, 27, 36, .03);
   --overlay: rgba(9, 16, 22, .45);
@@ -49,12 +56,12 @@ img { max-width: 100%; }
     --bg: #0A1117; --surface: #111B23; --surface-2: #15212B; --line: #22313C; --line-2: #2F404D;
     --ink: #E6EDF2; --muted: #A6B5C1; --faint: #93A3B0;
     --side: #060C11; --side-ink: #E3EAF0; --side-muted: #94A6B4; --side-active: #15232E; --side-line: #1A2833;
-    --accent: #2CB5A6; --accent-ink: #04201D; --accent-soft: #10302C; --accent-strong: #5ED3C5;
+    --accent: #00A0E0; --accent-ink: #04202E; --accent-soft: #0B2A3A; --accent-strong: #4CC2F0; --brand: #00A0E0;
     --bsf: #FB923C; --bsf-soft: #3A1E0E; --bsf-ink: #FDBA74;
-    --kov: #60A5FA; --kov-soft: #142846; --kov-ink: #A5C8FC;
+    --kov: #A78BFA; --kov-soft: #2A1F4A; --kov-ink: #C4B5FD;
     --gen: #94A3B8; --gen-soft: #1D2935; --gen-ink: #CBD5E1;
     --ok: #86EFAC; --ok-soft: #0F2E1C; --warn: #FCD34D; --warn-soft: #362A0A; --bad: #FCA5A5; --bad-soft: #3A1414;
-    --none: #A6B5C1; --none-soft: #1B2731; --new: #C7D2FE; --new-soft: #23264F;
+    --none: #A6B5C1; --none-soft: #1B2731; --new: #5EEAD4; --new-soft: #0F2E2B;
     --c1: #2CB5A6; --c2: #FB923C; --c3: #60A5FA; --c4: #C084FC; --c5: #F472B6; --c6: #A3E635; --c7: #FACC15; --c8: #94A3B8; --c9: #22D3EE; --c10: #F87171;
     --shadow: none; --overlay: rgba(0, 0, 0, .6);
     color-scheme: dark;
@@ -64,12 +71,12 @@ img { max-width: 100%; }
   --bg: #0A1117; --surface: #111B23; --surface-2: #15212B; --line: #22313C; --line-2: #2F404D;
   --ink: #E6EDF2; --muted: #A6B5C1; --faint: #93A3B0;
   --side: #060C11; --side-ink: #E3EAF0; --side-muted: #94A6B4; --side-active: #15232E; --side-line: #1A2833;
-  --accent: #2CB5A6; --accent-ink: #04201D; --accent-soft: #10302C; --accent-strong: #5ED3C5;
+  --accent: #00A0E0; --accent-ink: #04202E; --accent-soft: #0B2A3A; --accent-strong: #4CC2F0; --brand: #00A0E0;
   --bsf: #FB923C; --bsf-soft: #3A1E0E; --bsf-ink: #FDBA74;
-  --kov: #60A5FA; --kov-soft: #142846; --kov-ink: #A5C8FC;
+  --kov: #A78BFA; --kov-soft: #2A1F4A; --kov-ink: #C4B5FD;
   --gen: #94A3B8; --gen-soft: #1D2935; --gen-ink: #CBD5E1;
   --ok: #86EFAC; --ok-soft: #0F2E1C; --warn: #FCD34D; --warn-soft: #362A0A; --bad: #FCA5A5; --bad-soft: #3A1414;
-  --none: #A6B5C1; --none-soft: #1B2731; --new: #C7D2FE; --new-soft: #23264F;
+  --none: #A6B5C1; --none-soft: #1B2731; --new: #5EEAD4; --new-soft: #0F2E2B;
   --c1: #2CB5A6; --c2: #FB923C; --c3: #60A5FA; --c4: #C084FC; --c5: #F472B6; --c6: #A3E635; --c7: #FACC15; --c8: #94A3B8; --c9: #22D3EE; --c10: #F87171;
   --shadow: none; --overlay: rgba(0, 0, 0, .6);
   color-scheme: dark;
@@ -379,7 +386,7 @@ canvas.pad { display: block; width: 100%; aspect-ratio: 700 / 240; background: v
 
 <div class="login" id="login" hidden>
   <form class="login-card" id="loginForm" novalidate>
-    <div class="brand"><div class="brand-mark">FC</div><div class="brand-name"><b>Full Cleaner</b><span>Gestión interna</span></div></div>
+    <picture class="login-logo"><source srcset="logo-claro.png" media="(prefers-color-scheme: dark)"><img src="logo.png" alt="Full Cleaner · Expertos en limpieza" width="320" height="101"></picture><p class="login-tag">Gestión interna</p>
     <h1>Iniciar sesión</h1>
     <div class="field"><label for="lEmail">Correo</label><input class="inp" id="lEmail" type="email" autocomplete="username" inputmode="email" autocapitalize="off" required></div>
     <div class="field"><label for="lPass">Contraseña</label><input class="inp" id="lPass" type="password" autocomplete="current-password" required></div>
@@ -391,7 +398,7 @@ canvas.pad { display: block; width: 100%; aspect-ratio: 700 / 240; background: v
 
 <div class="app" id="appShell" hidden>
   <aside class="side" aria-label="Menú">
-    <div class="brand"><div class="brand-mark">FC</div><div class="brand-name"><b>Full Cleaner</b><span>Gestión interna</span></div></div>
+    <div class="brand-logo"><img src="logo-claro.png" alt="Full Cleaner · Expertos en limpieza" width="200" height="63"><span>Gestión interna</span></div>
     <button type="button" class="btn-new" data-act="nueva-entrega"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Registrar entrega</button>
     <nav class="side-nav" aria-label="Secciones">
       <a href="#inicio" data-nav="inicio"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/></svg>Panel</a>
@@ -407,7 +414,7 @@ canvas.pad { display: block; width: 100%; aspect-ratio: 700 / 240; background: v
   </aside>
 
   <header class="topbar">
-    <div class="brand"><div class="brand-mark">FC</div><div class="brand-name"><b>Full Cleaner</b><span>Gestión interna</span></div></div>
+    <img class="top-logo" src="logo-claro.png" alt="Full Cleaner · Expertos en limpieza" width="118" height="37">
     <a class="icon-btn" href="#ajustes" aria-label="Ajustes" style="color: inherit"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></a>
   </header>
 
