@@ -375,9 +375,9 @@ textarea.inp { min-height: 90px; resize: vertical; line-height: 1.45; }
 .stepper button { width: 44px; height: 44px; border-radius: 11px; border: 1px solid var(--line-2); background: var(--surface); font-size: 20px; cursor: pointer; color: var(--ink); }
 .stepper output { width: 36px; text-align: center; font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; }
 .pad-wrap { position: relative; }
-canvas.pad { display: block; width: 100%; aspect-ratio: 700 / 240; background: var(--surface); border: 1.5px dashed var(--line-2); border-radius: 14px; touch-action: none; cursor: crosshair; color: var(--ink); }
+canvas.pad { display: block; width: 100%; aspect-ratio: 700 / 420; background: var(--surface); border: 1.5px dashed var(--line-2); border-radius: 14px; touch-action: none; cursor: crosshair; color: var(--ink); }
 .pad-hint { position: absolute; left: 14px; bottom: 10px; font-size: 12px; color: var(--muted); pointer-events: none; }
-.pad-line { position: absolute; left: 8%; right: 8%; bottom: 30%; border-bottom: 1px solid var(--line-2); pointer-events: none; }
+.pad-line { position: absolute; left: 8%; right: 8%; bottom: 26%; border-bottom: 1px solid var(--line-2); pointer-events: none; }
 .foto { width: 100%; border-radius: 12px; border: 1px solid var(--line); display: block; }
 
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 70; background: var(--ink); color: var(--bg); padding: 12px 18px; border-radius: 12px; font-weight: 600; font-size: 14px; box-shadow: 0 6px 20px rgba(0, 0, 0, .25); max-width: calc(100% - 32px); }
@@ -1097,7 +1097,7 @@ function shFicha({ id, confirm }) {
 function firmaSVG(f, cls) {
   const d = f && typeof f.d === 'string' && /^[MLl0-9 .\-]*$/.test(f.d) ? f.d : '';
   const w = Number(f && f.w) || 700, h = Number(f && f.h) || 240;
-  return `<svg class="${cls}" viewBox="0 0 ${w} ${h}" role="img" aria-label="Firma"><path d="${esc(d)}" fill="none" stroke="currentColor" stroke-width="${cls === 'firma-mini' ? 7 : 3.2}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return `<svg class="${cls}" viewBox="0 0 ${w} ${h}" role="img" aria-label="Firma"><path d="${esc(d)}" fill="none" stroke="currentColor" stroke-width="${cls === 'firma-mini' ? 9 : 5}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
 /* ---- Agregar / editar trabajador ---- */
@@ -1202,12 +1202,12 @@ function renderExtras() {
   </div></div>`).join('');
 }
 function makePad(canvas, onDraw) {
-  const W = 700, H = 240; const ctx = canvas.getContext('2d'); const strokes = []; let cur = null;
+  const W = 700, H = 420; const ctx = canvas.getContext('2d'); const strokes = []; let cur = null;
   function size() { const r = canvas.getBoundingClientRect(); if (!r.width) return; const dpr = window.devicePixelRatio || 1; canvas.width = Math.round(r.width * dpr); canvas.height = Math.round(r.height * dpr); draw(); }
   function pt(ev) { const r = canvas.getBoundingClientRect(); return [Math.max(0, Math.min(W, Math.round((ev.clientX - r.left) / r.width * W))), Math.max(0, Math.min(H, Math.round((ev.clientY - r.top) / r.height * H)))]; }
   function draw() {
     ctx.setTransform(canvas.width / W, 0, 0, canvas.height / H, 0, 0); ctx.clearRect(0, 0, W, H);
-    ctx.lineWidth = 3.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = getComputedStyle(canvas).color;
+    ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = getComputedStyle(canvas).color;
     for (const s of strokes) { ctx.beginPath(); ctx.moveTo(s[0][0], s[0][1]); if (s.length === 1) ctx.lineTo(s[0][0] + 0.5, s[0][1]); for (let i = 1; i < s.length; i++) ctx.lineTo(s[i][0], s[i][1]); ctx.stroke(); }
   }
   canvas.addEventListener('pointerdown', e => { e.preventDefault(); try { canvas.setPointerCapture(e.pointerId); } catch (_) {} cur = [pt(e)]; strokes.push(cur); draw(); onDraw && onDraw(); });
