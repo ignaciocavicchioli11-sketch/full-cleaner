@@ -30,6 +30,10 @@ img { max-width: 100%; }
 .subareas { padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
 .sub-lbl { font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
 .chip.sub { min-height: 36px; font-size: 13px; }
+.sub-h { display: flex; align-items: center; gap: 8px; margin: 0; padding: 10px 16px; font-size: 14.5px; font-weight: 700; color: var(--ink); background: var(--surface-2); border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line); }
+.sub-h:first-of-type { border-top: none; }
+.sub-h svg { width: 17px; height: 17px; color: var(--muted); }
+.sub-h .sub-n { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); }
 .solo-cel { display: none; }
 @media (max-width: 699px) { .btn.solo-cel { display: inline-flex; margin-top: 8px; } }
 .tbl tbody tr.grp td, .tbl tbody tr.grp:hover td { background: var(--gen-soft); color: var(--gen-ink); font-family: var(--f-display); font-weight: 700; font-size: 16px; padding-top: 12px; padding-bottom: 12px; border-top: 2px solid var(--line-2); cursor: default; }
@@ -476,6 +480,7 @@ const ICON = {
   receipt: '<path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
   camera: '<path d="M4 7h4l2-3h4l2 3h4v13H4z"/><circle cx="12" cy="13" r="4"/>',
   pen: '<path d="M4 20h4L20 8l-4-4L4 16z"/>',
+  pin: '<path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
   check: '<path d="m5 12 5 5 9-10"/>',
   dl: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/>'
@@ -848,9 +853,19 @@ function filtraTrab(f) {
     if (f.div === 'baja') { if (t.activo !== false) return false; }
     else { if (t.activo === false) return false; if (f.div !== 'todos' && t.division !== f.div) return false; }
     if (f.grupo && t.grupo !== f.grupo) return false;
-    if (q) { const hay = norm(t.nombre).includes(q) || norm(t.cargo).includes(q) || norm(t.grupo).includes(q) || (qr.length >= 3 && rutLimpio(t.rut).includes(qr)); if (!hay) return false; }
+    if (q) { const hay = norm(t.nombre).includes(q) || norm(t.cargo).includes(q) || norm(t.grupo).includes(q) || norm(t.lugar).includes(q) || (qr.length >= 3 && rutLimpio(t.rut).includes(qr)); if (!hay) return false; }
     return true;
   }).sort((a, b) => norm(a.nombre).localeCompare(norm(b.nombre)));
+}
+// Dentro de un área, separa por lugar fijo (ej: Laguna Caren); los sin lugar quedan juntos al final.
+function listaConLugares(ts, g) {
+  const lugares = [...new Set(ts.map(t => t.lugar || ''))];
+  if (lugares.length === 1 && !lugares[0]) return `<div class="list">${ts.map(rowTrab).join('')}</div>`;
+  lugares.sort((a, b) => (a ? 0 : 1) - (b ? 0 : 1) || a.localeCompare(b));
+  return lugares.map(l => {
+    const sub = ts.filter(t => (t.lugar || '') === l);
+    return `<h3 class="sub-h">${ic('pin')}<span>${esc(l || 'Resto de ' + (g || 'el área'))}</span><span class="sub-n">${sub.length}</span></h3><div class="list">${sub.map(rowTrab).join('')}</div>`;
+  }).join('');
 }
 function refreshPersonal() {
   const f = S.f.personal;
@@ -881,7 +896,7 @@ function refreshPersonal() {
   box.innerHTML = grupos.map(({ dv, g, ts }) => `
     <section class="group">
       <h2 class="group-h ${dv || 'general'}"><span class="g-txt"><span class="g-div">${esc(dv ? DIV[dv].nombre : 'Sin división')}</span><span class="g-name">${esc(g || 'Sin área')}</span></span><span class="g-n">${ts.length} ${ts.length === 1 ? 'persona' : 'personas'}</span></h2>
-      <div class="list">${ts.map(rowTrab).join('')}</div>
+      ${listaConLugares(ts, g)}
     </section>`).join('');
 }
 function rowTrab(t) {
@@ -942,14 +957,14 @@ function refreshEntregas() {
   }
   const pasa = t => t && (f.div === 'todos' || f.div === 'reciente' || t.division === f.div) && (!f.grupo || t.grupo === f.grupo);
   const ordenG = t => { const o = ordenGrupos(t.division); const i = o.indexOf(t.grupo); return i < 0 ? 99 : i; };
-  const cmpT = (a, b) => (a.division || '').localeCompare(b.division || '') || ordenG(a) - ordenG(b) || norm(a.nombre).localeCompare(norm(b.nombre));
-  const grpRow = (t, n, ncol) => `<tr class="grp ${esc(t.division || 'general')}"><td colspan="${ncol}"><span class="g-div">${esc(DIV[t.division] ? DIV[t.division].corto : 'Sin división')}</span>${esc(t.grupo || 'Sin área')}<span class="g-cnt">${n}</span></td></tr>`;
+  const cmpT = (a, b) => (a.division || '').localeCompare(b.division || '') || ordenG(a) - ordenG(b) || (a.lugar ? 0 : 1) - (b.lugar ? 0 : 1) || (a.lugar || '').localeCompare(b.lugar || '') || norm(a.nombre).localeCompare(norm(b.nombre));
+  const grpRow = (t, n, ncol) => `<tr class="grp ${esc(t.division || 'general')}"><td colspan="${ncol}"><span class="g-div">${esc(DIV[t.division] ? DIV[t.division].corto : 'Sin división')}</span>${esc(t.grupo || 'Sin área')}${t.lugar ? ' · ' + esc(t.lugar) : ''}<span class="g-cnt">${n}</span></td></tr>`;
   const conGrupos = (lista, getT, fila, ncol) => {
     let prev = null;
     return lista.map(x => {
-      const t = getT(x), key = (t.division || '') + '|' + (t.grupo || '');
+      const t = getT(x), key = (t.division || '') + '|' + (t.grupo || '') + '|' + (t.lugar || '');
       let h = '';
-      if (key !== prev) { prev = key; h = grpRow(t, lista.filter(y => { const u = getT(y); return (u.division || '') + '|' + (u.grupo || '') === key; }).length, ncol); }
+      if (key !== prev) { prev = key; h = grpRow(t, lista.filter(y => { const u = getT(y); return (u.division || '') + '|' + (u.grupo || '') + '|' + (u.lugar || '') === key; }).length, ncol); }
       return h + fila(x);
     }).join('');
   };
@@ -1127,7 +1142,7 @@ function shFicha({ id, confirm }) {
   <div class="sheet-body">
     <div class="prof"><span class="av ${baja ? 'baja' : esc(t.division)}" aria-hidden="true">${esc(iniciales(t.nombre))}</span><div style="min-width:0">
       <h3>${esc(t.nombre)}</h3>
-      <div class="meta">${DIV[t.division] ? `<span class="pill ${esc(t.division)}">${esc(DIV[t.division].corto)}</span>` : ''}<span>${esc(t.cargo || 'Sin cargo')}${t.grupo ? ' · ' + esc(t.grupo) : ''}</span>${baja ? '<span class="pill none">De baja</span>' : ''}${esNuevo(t) && !baja ? '<span class="pill new">Nuevo</span>' : ''}</div>
+      <div class="meta">${DIV[t.division] ? `<span class="pill ${esc(t.division)}">${esc(DIV[t.division].corto)}</span>` : ''}<span>${esc(t.cargo || 'Sin cargo')}${t.grupo ? ' · ' + esc(t.grupo) : ''}${t.lugar ? ' · ' + esc(t.lugar) : ''}</span>${baja ? '<span class="pill none">De baja</span>' : ''}${esNuevo(t) && !baja ? '<span class="pill new">Nuevo</span>' : ''}</div>
       <div class="meta">RUT ${esc(rutFormato(t.rut) || '—')}${t.fechaIngreso ? ` · Ingresó el ${esc(fCorta(t.fechaIngreso))} (${esc(antiguedad(t.fechaIngreso))})` : ''}</div>
       ${t.telefono ? `<div class="meta">Teléfono: ${esc(t.telefono)}</div>` : ''}
       ${baja ? `<div class="meta">Dado de baja el ${esc(fCorta(t.fechaBaja))}${t.motivoBaja ? ' · ' + esc(t.motivoBaja) : ''}</div>` : ''}
@@ -1171,6 +1186,7 @@ function shTrabajador({ id }) {
       <div class="field"><label for="tGrupo" id="lGrupo">${v.division === 'kovacs' ? 'Sucursal' : 'Área'}</label><select class="inp" id="tGrupo">${grupoOpts(v.division || 'bsf', v.grupo)}</select></div>
       <div class="field"><label for="tCargo">Cargo</label><input class="inp" id="tCargo" list="dlCargos" value="${esc(v.cargo || '')}" autocomplete="off"><datalist id="dlCargos">${(cfg().cargos || []).map(c => `<option value="${esc(c)}"></option>`).join('')}</datalist></div>
     </div>
+    <div class="field"><label for="tLugar">Lugar fijo (opcional)</label><input class="inp" id="tLugar" list="dlLugares" value="${esc(v.lugar || '')}" placeholder="Ej: Laguna Caren" autocomplete="off"><datalist id="dlLugares">${[...new Set(S.trab.map(x => x.lugar).filter(Boolean))].sort().map(l => `<option value="${esc(l)}"></option>`).join('')}</datalist><span class="hint">Para ordenar dentro del área. Déjalo vacío si no tiene un lugar fijo.</span></div>
     <div class="field"><span class="lbl">Tallas</span>
       <div class="grid3">
         <div class="field"><label for="tPolera" class="hint">Polera</label><select class="inp" id="tPolera"><option value="">–</option>${tallasPolera.map(s => `<option${tl.polera === s ? ' selected' : ''}>${s}</option>`).join('')}${tl.polera && !tallasPolera.includes(tl.polera) ? `<option selected>${esc(tl.polera)}</option>` : ''}</select></div>
@@ -1485,7 +1501,7 @@ async function guardarTrabajador(id) {
   if (!ok) { toast('Revisa los campos marcados.'); return; }
   const division = $('#tDiv').value || 'bsf';
   const data = {
-    nombre, rut, division, grupo: $('#tGrupo').value, cargo: $('#tCargo').value.trim(),
+    nombre, rut, division, grupo: $('#tGrupo').value, lugar: $('#tLugar').value.trim(), cargo: $('#tCargo').value.trim(),
     fechaIngreso: $('#tIngreso').value || '',
     tallas: { polera: $('#tPolera').value, pantalon: $('#tPantalon').value.trim(), zapato: $('#tZapato').value.trim() },
     telefono: $('#tTel').value.trim(), notas: $('#tNotas').value.trim(), actualizado: new Date().toISOString()
@@ -1587,10 +1603,10 @@ function bajar(nombre, texto) {
 }
 function descargarPersonal() {
   const ps = prendas();
-  const rows = [['Nombre', 'RUT', 'División', 'Área / sucursal', 'Cargo', 'Fecha ingreso', 'Estado', 'Talla polera', 'Talla pantalón', 'Talla zapato', 'Teléfono'].concat(ps.map(p => 'Última ' + p.nombre))];
+  const rows = [['Nombre', 'RUT', 'División', 'Área / sucursal', 'Lugar', 'Cargo', 'Fecha ingreso', 'Estado', 'Talla polera', 'Talla pantalón', 'Talla zapato', 'Teléfono'].concat(ps.map(p => 'Última ' + p.nombre))];
   S.trab.slice().sort((a, b) => (a.division || '').localeCompare(b.division || '') || norm(a.nombre).localeCompare(norm(b.nombre))).forEach(t => {
     const x = t.tallas || {};
-    rows.push([t.nombre, rutFormato(t.rut), DIV[t.division] ? DIV[t.division].nombre : '', t.grupo, t.cargo, fCorta(t.fechaIngreso), t.activo === false ? 'De baja' : 'Activo', x.polera, x.pantalon, x.zapato, t.telefono].concat(ps.map(p => { const u = ultima(t.id, p.nombre); return u ? fCorta(u.fecha) : ''; })));
+    rows.push([t.nombre, rutFormato(t.rut), DIV[t.division] ? DIV[t.division].nombre : '', t.grupo, t.lugar, t.cargo, fCorta(t.fechaIngreso), t.activo === false ? 'De baja' : 'Activo', x.polera, x.pantalon, x.zapato, t.telefono].concat(ps.map(p => { const u = ultima(t.id, p.nombre); return u ? fCorta(u.fecha) : ''; })));
   });
   bajar(`personal-full-cleaner-${hoyISO()}.csv`, csv(rows));
 }

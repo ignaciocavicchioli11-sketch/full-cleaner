@@ -19,6 +19,7 @@ create table if not exists public.trabajadores (
   rut           text,
   division      text check (division in ('bsf', 'kovacs')),
   grupo         text,
+  lugar         text,
   cargo         text,
   fecha_ingreso date,
   tallas        jsonb not null default '{}'::jsonb,
@@ -52,6 +53,7 @@ create table if not exists public.entregas (
   firmado_el        timestamptz
 );
 alter table public.entregas add column if not exists firmado_el timestamptz;
+alter table public.trabajadores add column if not exists lugar text;
 create index if not exists entregas_trabajador_idx on public.entregas (trabajador_id, fecha desc);
 
 -- ---------- Gastos (facturas) ----------
