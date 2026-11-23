@@ -1521,7 +1521,17 @@ async function guardarEntrega() {
   const data = { trabajadorId: t.id, trabajadorNombre: t.nombre, division: t.division, grupo: t.grupo || '', fecha, items, firma: sinFirma ? null : padApi.data(), nota: $('#eNota').value.trim(), creado: new Date().toISOString() };
   const nid = uid('e-');
   const done = await guardar(() => S.db.doc('entregas/' + nid).set(data), 'Entrega registrada');
-  if (done) openSheet('ficha', { id: t.id });
+  if (!done) return;
+  // Guardar en la ficha la talla entregada (polera, pantalón, zapato)
+  const tallas = Object.assign({}, t.tallas || {}); let cambio = false;
+  items.forEach(it => {
+    const p = prendasDe(t.division).find(x => norm(x.nombre) === norm(it.prenda));
+    if (!p || !p.talla || !it.talla) return;
+    const principal = norm(p.nombre).startsWith(p.talla);
+    if (!tallas[p.talla] || (principal && tallas[p.talla] !== it.talla)) { tallas[p.talla] = it.talla; cambio = true; }
+  });
+  if (cambio) await guardar(() => S.db.doc('trabajadores/' + t.id).update({ tallas, actualizado: new Date().toISOString() }));
+  openSheet('ficha', { id: t.id });
 }
 
 /* ---- Gasto: cálculo automático y guardado ---- */
