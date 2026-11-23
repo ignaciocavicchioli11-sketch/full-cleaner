@@ -50,10 +50,12 @@ create table if not exists public.entregas (
   creado            timestamptz not null default now(),
   creado_por        uuid default auth.uid(),
   creado_por_email  text default (auth.jwt() ->> 'email'),
-  firmado_el        timestamptz
+  firmado_el        timestamptz,
+  pedir_firma       boolean not null default false
 );
 alter table public.entregas add column if not exists firmado_el timestamptz;
 alter table public.trabajadores add column if not exists lugar text;
+alter table public.entregas add column if not exists pedir_firma boolean not null default false;
 create index if not exists entregas_trabajador_idx on public.entregas (trabajador_id, fecha desc);
 
 -- ---------- Gastos (facturas) ----------
