@@ -30,10 +30,14 @@ img { max-width: 100%; }
 .subareas { padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
 .sub-lbl { font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
 .chip.sub { min-height: 36px; font-size: 13px; }
-.sub-h { display: flex; align-items: center; gap: 8px; margin: 0; padding: 10px 16px; font-size: 14.5px; font-weight: 700; color: var(--ink); background: var(--surface-2); border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line); }
+.sub-h { display: flex; align-items: center; gap: 10px; margin: 0; padding: 13px 16px; font-family: var(--f-display); font-size: 17px; font-weight: 700; color: var(--ink); background: var(--surface-2); border-top: 8px solid var(--bg); border-bottom: 2px solid var(--line-2); }
 .sub-h:first-of-type { border-top: none; }
-.sub-h svg { width: 17px; height: 17px; color: var(--muted); }
-.sub-h .sub-n { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); }
+.sub-h.bsf { background: color-mix(in srgb, var(--bsf-soft) 55%, var(--surface)); border-bottom-color: var(--bsf); }
+.sub-h.kovacs { background: color-mix(in srgb, var(--kov-soft) 55%, var(--surface)); border-bottom-color: var(--kov); }
+.sub-h svg { width: 20px; height: 20px; color: var(--muted); stroke-width: 2.2; }
+.sub-h.bsf svg { color: var(--bsf); }
+.sub-h.kovacs svg { color: var(--kov); }
+.sub-h .sub-n { font-family: var(--f-body); font-size: 12.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line-2); color: var(--ink); }
 .solo-cel { display: none; }
 @media (max-width: 699px) { .btn.solo-cel { display: inline-flex; margin-top: 8px; } }
 .tbl tbody tr.grp td, .tbl tbody tr.grp:hover td { background: var(--gen-soft); color: var(--gen-ink); font-family: var(--f-display); font-weight: 700; font-size: 16px; padding-top: 12px; padding-bottom: 12px; border-top: 2px solid var(--line-2); cursor: default; }
@@ -864,7 +868,7 @@ function listaConLugares(ts, g) {
   lugares.sort((a, b) => (a ? 0 : 1) - (b ? 0 : 1) || a.localeCompare(b));
   return lugares.map(l => {
     const sub = ts.filter(t => (t.lugar || '') === l);
-    return `<h3 class="sub-h">${ic('pin')}<span>${esc(l || 'Resto de ' + (g || 'el área'))}</span><span class="sub-n">${sub.length}</span></h3><div class="list">${sub.map(rowTrab).join('')}</div>`;
+    return `<h3 class="sub-h ${esc((ts[0] && ts[0].division) || 'general')}">${ic('pin')}<span>${esc(l || 'Resto de ' + (g || 'el área'))}</span><span class="sub-n">${sub.length}</span></h3><div class="list">${sub.map(rowTrab).join('')}</div>`;
   }).join('');
 }
 function refreshPersonal() {
