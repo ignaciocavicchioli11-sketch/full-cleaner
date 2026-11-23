@@ -27,6 +27,16 @@ img { max-width: 100%; }
 .login-card .brand-name span { color: var(--muted); }
 .login-card .err { color: var(--bad); font-size: 13.5px; font-weight: 500; margin: 0; }
 .soon b { overflow-wrap: anywhere; }
+.subareas { padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+.sub-lbl { font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.chip.sub { min-height: 36px; font-size: 13px; }
+.solo-cel { display: none; }
+@media (max-width: 699px) { .btn.solo-cel { display: inline-flex; margin-top: 8px; } }
+.tbl tbody tr.grp td, .tbl tbody tr.grp:hover td { background: var(--gen-soft); color: var(--gen-ink); font-family: var(--f-display); font-weight: 700; font-size: 16px; padding-top: 12px; padding-bottom: 12px; border-top: 2px solid var(--line-2); cursor: default; }
+.tbl tbody tr.grp.bsf td, .tbl tbody tr.grp.bsf:hover td { background: var(--bsf-soft); color: var(--bsf-ink); }
+.tbl tbody tr.grp.kovacs td, .tbl tbody tr.grp.kovacs:hover td { background: var(--kov-soft); color: var(--kov-ink); }
+.tbl tr.grp .g-div { font-family: var(--f-body); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; margin-right: 8px; }
+.tbl tr.grp .g-cnt { font-family: var(--f-body); font-size: 12.5px; font-weight: 600; margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: var(--surface); color: var(--ink); }
 .brand-logo { display: flex; flex-direction: column; gap: 6px; padding: 2px 6px 0; }
 .brand-logo img { width: 200px; max-width: 100%; height: auto; display: block; }
 .brand-logo span { font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--side-muted); padding-left: 2px; }
@@ -544,7 +554,7 @@ const S = {
   trab: [], entregas: [], gastos: [], config: DEFAULT_CONFIG,
   ultimo: {}, // ultimo[trabajadorId][prendaNorm] = {fecha, talla, cantidad, id}
   view: 'inicio',
-  f: { personal: { q: '', div: 'todos', grupo: '' }, entregas: { q: '', div: 'todos', modo: 'estado' }, gastos: { mes: '', div: 'todos', q: '' } },
+  f: { personal: { q: '', div: 'todos', grupo: '' }, entregas: { q: '', div: 'todos', grupo: '', modo: 'estado' }, gastos: { mes: '', div: 'todos', q: '' } },
   sheet: null, ajustesDirty: false
 };
 const cfg = () => S.config || DEFAULT_CONFIG;
@@ -807,7 +817,7 @@ function cardRevisar(act) {
   const sinFirma = S.entregas.filter(e => !e.firma && !e.papel).length;
   if (sinRev) items.push(`<button type="button" data-goto="gastos"><span class="t-ic info">${ic('receipt')}</span><span class="t-txt"><span class="t-main">${sinRev} ${sinRev === 1 ? 'factura' : 'facturas'} por revisar</span><span class="t-sub">${sinDiv ? `${sinDiv} sin división asignada` : 'Confirma categoría y división'}</span></span>${ic('chev')}</button>`);
   if (sinTallas) items.push(`<button type="button" data-goto="personal"><span class="t-ic warn">${ic('user')}</span><span class="t-txt"><span class="t-main">${sinTallas} ${sinTallas === 1 ? 'ficha' : 'fichas'} sin tallas completas</span><span class="t-sub">Agrega talla de polera, pantalón y zapato</span></span>${ic('chev')}</button>`);
-  if (sinFirma) items.push(`<button type="button" data-goto="entregas"><span class="t-ic warn">${ic('pen')}</span><span class="t-txt"><span class="t-main">${sinFirma} ${sinFirma === 1 ? 'entrega' : 'entregas'} sin firma</span><span class="t-sub">Pide al trabajador que firme</span></span>${ic('chev')}</button>`);
+  if (sinFirma) items.push(`<button type="button" data-goto="entregas" data-modo="pendientes"><span class="t-ic warn">${ic('pen')}</span><span class="t-txt"><span class="t-main">${sinFirma} ${sinFirma === 1 ? 'entrega' : 'entregas'} con firma pendiente</span><span class="t-sub">Pide al trabajador que firme</span></span>${ic('chev')}</button>`);
   return `<section class="card c-4"><div class="card-head"><h2 class="card-title">Por revisar</h2></div>
     ${items.length ? `<div class="todo">${items.join('')}</div>` : `<div class="todo"><button type="button" disabled style="cursor:default"><span class="t-ic ok">${ic('check')}</span><span class="t-txt"><span class="t-main">Todo al día</span><span class="t-sub">No hay nada pendiente por revisar</span></span></button></div>`}
   </section>`;
@@ -905,37 +915,77 @@ function vEntregasShell() {
     <div class="actions"><button type="button" class="btn primary" data-act="nueva-entrega">${ic('plus')}Registrar entrega</button></div>
   </div>
   <div class="filters">
-    <div class="chips" role="group" aria-label="Vista">${modo('estado', 'Última entrega por trabajador')}${modo('historial', 'Historial de entregas')}</div>
+    <div class="chips" role="group" aria-label="Vista">${modo('estado', 'Última entrega por trabajador')}${modo('historial', 'Historial de entregas')}<button type="button" class="chip" data-emodo="pendientes" aria-pressed="${f.modo === 'pendientes'}">Firmas pendientes <span id="ePendN"></span></button></div>
   </div>
   <div class="filters">
     <label class="search">${ic('search')}<span class="sr">Buscar trabajador</span><input id="eQ" type="search" placeholder="Buscar trabajador" value="${esc(f.q)}" autocomplete="off"></label>
     <div class="chips" role="group" aria-label="Filtrar por división">${chip('todos', 'Todos')}${chip('bsf', 'Bodegas SF')}${chip('kovacs', 'Kovacs')}${chip('reciente', 'Recibieron hace poco')}</div>
   </div>
+  <div class="filters subareas" id="eGrupos" hidden></div>
   <div id="eList"></div>`;
 }
 function refreshEntregas() {
   const f = S.f.entregas, box = $('#eList'); if (!box) return;
   const q = norm(f.q);
+  const nPend = S.entregas.filter(e => !e.firma && !e.papel).length;
+  const pn = $('#ePendN'); if (pn) pn.textContent = nPend ? `(${nPend})` : '';
+  // Subdivisión: áreas de Bodegas SF o sucursales de Kovacs
+  const divSel = (f.div === 'bsf' || f.div === 'kovacs') ? f.div : '';
+  const gbox = $('#eGrupos');
+  if (!divSel) { f.grupo = ''; if (gbox) { gbox.hidden = true; gbox.innerHTML = ''; } }
+  else if (gbox) {
+    const gs = ordenGrupos(divSel).filter(g => S.trab.some(t => t.division === divSel && t.grupo === g && t.activo !== false));
+    if (f.grupo && !gs.includes(f.grupo)) f.grupo = '';
+    const gchip = (v, l) => `<button type="button" class="chip sub" data-egrupo="${esc(v)}" aria-pressed="${f.grupo === v}">${esc(l)}</button>`;
+    gbox.hidden = false;
+    gbox.innerHTML = `<span class="sub-lbl">${divSel === 'bsf' ? 'Área' : 'Sucursal'}</span><div class="chips" role="group" aria-label="${divSel === 'bsf' ? 'Filtrar por área' : 'Filtrar por sucursal'}">${gchip('', 'Todas')}${gs.map(g => gchip(g, g)).join('')}</div>`;
+  }
+  const pasa = t => t && (f.div === 'todos' || f.div === 'reciente' || t.division === f.div) && (!f.grupo || t.grupo === f.grupo);
+  const ordenG = t => { const o = ordenGrupos(t.division); const i = o.indexOf(t.grupo); return i < 0 ? 99 : i; };
+  const cmpT = (a, b) => (a.division || '').localeCompare(b.division || '') || ordenG(a) - ordenG(b) || norm(a.nombre).localeCompare(norm(b.nombre));
+  const grpRow = (t, n, ncol) => `<tr class="grp ${esc(t.division || 'general')}"><td colspan="${ncol}"><span class="g-div">${esc(DIV[t.division] ? DIV[t.division].corto : 'Sin división')}</span>${esc(t.grupo || 'Sin área')}<span class="g-cnt">${n}</span></td></tr>`;
+  const conGrupos = (lista, getT, fila, ncol) => {
+    let prev = null;
+    return lista.map(x => {
+      const t = getT(x), key = (t.division || '') + '|' + (t.grupo || '');
+      let h = '';
+      if (key !== prev) { prev = key; h = grpRow(t, lista.filter(y => { const u = getT(y); return (u.division || '') + '|' + (u.grupo || '') === key; }).length, ncol); }
+      return h + fila(x);
+    }).join('');
+  };
+  const tDe = e => trabPorId(e.trabajadorId) || { division: e.division, grupo: e.grupo, nombre: e.trabajadorNombre || '', cargo: '' };
+
   if (f.modo === 'estado') {
-    const ps = (f.div === 'bsf' || f.div === 'kovacs') ? prendasDe(f.div) : prendas();
-    let ts = activos().filter(t => (f.div === 'todos' || f.div === 'reciente' || t.division === f.div) && (!q || norm(t.nombre).includes(q)));
+    const ps = divSel ? prendasDe(divSel) : prendas();
+    let ts = activos().filter(t => pasa(t) && (!q || norm(t.nombre).includes(q)));
     if (f.div === 'reciente') ts = ts.filter(t => estadosTrab(t).some(s => s.e.k === 'warn'));
-    ts.sort((a, b) => (a.division || '').localeCompare(b.division || '') || norm(a.grupo).localeCompare(norm(b.grupo)) || norm(a.nombre).localeCompare(norm(b.nombre)));
+    ts.sort(cmpT);
     if (!ts.length) { box.innerHTML = `<div class="empty"><b>${f.div === 'reciente' ? 'Nadie ha recibido ropa hace poco' : 'No hay trabajadores que mostrar'}</b><span>${f.div === 'reciente' ? 'Aquí aparecen los que recibieron algo hace menos del tiempo mínimo definido en Ajustes.' : 'Prueba quitando los filtros.'}</span></div>`; return; }
-    box.innerHTML = `<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="sticky">Trabajador</th><th>Área / sucursal</th>${ps.map(p => `<th>${esc(p.nombre)}<span class="d" style="font-weight:400">${Number(p.meses) ? `cada ${esc(p.meses)} ${Number(p.meses) === 1 ? 'mes' : 'meses'}` : 'sin aviso'}</span></th>`).join('')}</tr></thead><tbody>
-      ${ts.map(t => `<tr data-act="ficha" data-id="${esc(t.id)}" tabindex="0"><td class="sticky"><b>${esc(nombreCorto(t.nombre))}</b><span class="d">${esc(t.cargo || '')}</span></td><td><span class="pill ${esc(t.division)}">${esc(DIV[t.division] ? DIV[t.division].corto : '—')}</span><span class="d">${esc(t.grupo || '')}</span></td>
-        ${(est => ps.map(p => est.find(x => x.p.nombre === p.nombre) || null))(estadosTrab(t)).map(s => !s ? `<td><span class="d">No aplica</span></td>` : `<td>${s.u ? `${esc(fCorta(s.u.fecha))}<span class="d">${esc(hace(s.u.fecha))}</span>${s.e.k === 'warn' ? `<span class="pill warn" style="margin-top:4px">${esc(s.e.t)}</span>` : ''}` : `<span class="pill none">Sin registro</span>`}</td>`).join('')}</tr>`).join('')}
+    const fila = t => `<tr data-act="ficha" data-id="${esc(t.id)}" tabindex="0"><td class="sticky"><b>${esc(nombreCorto(t.nombre))}</b><span class="d">${esc(t.cargo || '')}</span></td>
+        ${(est => ps.map(p => est.find(x => x.p.nombre === p.nombre) || null))(estadosTrab(t)).map(s => !s ? `<td><span class="d">No aplica</span></td>` : `<td>${s.u ? `${esc(fCorta(s.u.fecha))}<span class="d">${esc(hace(s.u.fecha))}</span>${s.e.k === 'warn' ? `<span class="pill warn" style="margin-top:4px">${esc(s.e.t)}</span>` : ''}` : `<span class="pill none">Sin registro</span>`}</td>`).join('')}</tr>`;
+    box.innerHTML = `<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="sticky">Trabajador</th>${ps.map(p => `<th>${esc(p.nombre)}<span class="d" style="font-weight:400">${Number(p.meses) ? `cada ${esc(p.meses)} ${Number(p.meses) === 1 ? 'mes' : 'meses'}` : 'sin aviso'}</span></th>`).join('')}</tr></thead><tbody>
+      ${conGrupos(ts, t => t, fila, ps.length + 1)}
     </tbody></table></div>
     <p class="sub">Haz clic en un trabajador para ver su ficha y registrarle una entrega. “Muy reciente” significa que se le entregó hace menos del tiempo mínimo que definiste en Ajustes.</p>`;
+  } else if (f.modo === 'pendientes') {
+    const es = S.entregas.filter(e => !e.firma && !e.papel).filter(e => { const t = tDe(e); return pasa(t) && (!q || norm(t.nombre).includes(q)); })
+      .sort((a, b) => cmpT(tDe(a), tDe(b)) || (a.fecha || '').localeCompare(b.fecha || ''));
+    if (!es.length) { box.innerHTML = `<div class="empty"><b>No hay firmas pendientes${f.grupo ? ' en ' + esc(f.grupo) : ''}</b><span>Todas las entregas de este grupo están firmadas.</span></div>`; return; }
+    const fila = e => { const t = tDe(e); const boton = cls => `<button type="button" class="btn primary ${cls}" data-act="entrega" data-id="${esc(e.id)}" style="min-height:38px">${ic('pen')}Firmar</button>`;
+      return `<tr data-act="entrega" data-id="${esc(e.id)}" tabindex="0"><td class="sticky"><b>${esc(t.nombre)}</b><span class="d">${esc(t.cargo || '')}</span>${boton('solo-cel')}</td><td style="white-space:nowrap">${esc(fCorta(e.fecha))}<span class="d">${esc(hace(e.fecha))}</span></td><td>${esc(itemsTxt(e))}</td><td class="hide-narrow">${boton('')}</td></tr>`; };
+    box.innerHTML = `<div class="info">${ic('pen')}<div><b>${es.length} ${es.length === 1 ? 'entrega espera' : 'entregas esperan'} la firma del trabajador</b>Cuando veas a la persona, toca “Firmar”, pídele que firme con el dedo en la pantalla y toca “Guardar firma”.</div></div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th class="sticky">Trabajador</th><th>Fecha de entrega</th><th>Qué se entregó</th><th class="hide-narrow"></th></tr></thead><tbody>
+      ${conGrupos(es, tDe, fila, 4)}
+    </tbody></table></div>`;
   } else {
-    let es = S.entregas.filter(e => { const t = trabPorId(e.trabajadorId); const dv = t ? t.division : e.division; if (f.div !== 'todos' && f.div !== 'reciente' && dv !== f.div) return false; if (q && !norm(t ? t.nombre : e.trabajadorNombre).includes(q)) return false; return true; });
-    if (!es.length) { box.innerHTML = `<div class="empty"><b>Todavía no hay entregas registradas</b><span>Usa “Registrar entrega” cada vez que le entregues ropa o EPP a alguien. El trabajador firma con el dedo en la pantalla.</span><button type="button" class="btn primary" data-act="nueva-entrega">${ic('plus')}Registrar entrega</button></div>`; return; }
+    const es = S.entregas.filter(e => { const t = tDe(e); return pasa(t) && (!q || norm(t.nombre).includes(q)); });
+    if (!es.length) { box.innerHTML = `<div class="empty"><b>No hay entregas con estos filtros</b><span>Usa “Registrar entrega” cada vez que le entregues ropa o EPP a alguien. El trabajador firma con el dedo en la pantalla.</span></div>`; return; }
     box.innerHTML = `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Fecha</th><th>Trabajador</th><th>Qué se entregó</th><th>Firma</th></tr></thead><tbody>
-      ${es.slice(0, 400).map(e => { const t = trabPorId(e.trabajadorId); return `<tr data-act="entrega" data-id="${esc(e.id)}" tabindex="0"><td style="white-space:nowrap">${esc(fCorta(e.fecha))}<span class="d">${esc(hace(e.fecha))}</span></td><td><b>${esc(t ? t.nombre : (e.trabajadorNombre || '—'))}</b><span class="d">${esc(t && DIV[t.division] ? DIV[t.division].corto + ' · ' + (t.grupo || '') : '')}</span></td><td>${esc(itemsTxt(e))}</td><td>${firmaPill(e)}</td></tr>`; }).join('')}
+      ${es.slice(0, 400).map(e => { const t = tDe(e); return `<tr data-act="entrega" data-id="${esc(e.id)}" tabindex="0"><td style="white-space:nowrap">${esc(fCorta(e.fecha))}<span class="d">${esc(hace(e.fecha))}</span></td><td><b>${esc(t.nombre || '—')}</b><span class="d">${esc(DIV[t.division] ? DIV[t.division].corto + ' · ' + (t.grupo || '') : '')}</span></td><td>${esc(itemsTxt(e))}</td><td>${firmaPill(e)}</td></tr>`; }).join('')}
     </tbody></table></div>`;
   }
 }
-const firmaPill = e => e.firma ? '<span class="pill ok">Firmado</span>' : e.papel ? '<span class="pill none">En hoja de papel</span>' : '<span class="pill warn">Sin firma</span>';
+const firmaPill = e => e.firma ? '<span class="pill ok">Firmado</span>' : e.papel ? '<span class="pill none">En hoja de papel</span>' : '<span class="pill warn">Firma pendiente</span>';
 const itemsTxt = e => (e.items || []).map(i => `${i.cantidad || 1} ${i.prenda}${i.talla ? ' (' + i.talla + ')' : ''}`).join(', ');
 
 /* ================= Vista: Gastos ================= */
@@ -1049,7 +1099,7 @@ function renderSheet() {
   if (kind === 'ficha') p.innerHTML = shFicha(args);
   else if (kind === 'trabajador') p.innerHTML = shTrabajador(args);
   else if (kind === 'entrega') { p.innerHTML = shEntregaForm(args); setupEntregaForm(); }
-  else if (kind === 'entregaDet') p.innerHTML = shEntregaDet(args);
+  else if (kind === 'entregaDet') { p.innerHTML = shEntregaDet(args); padApi = $('#detPad') ? makePad($('#detPad'), () => { const h = $('#detHint'); if (h) h.hidden = true; }) : null; }
   else if (kind === 'gasto') p.innerHTML = shGasto(args);
   else if (kind === 'facturas') p.innerHTML = shFacturas();
   const b = $('.sheet-body', p); if (b) b.scrollTop = keep;
@@ -1234,7 +1284,11 @@ function shEntregaDet({ id, confirm }) {
   <div class="sheet-body">
     <div class="prof"><span class="av ${esc(t ? t.division : '')}" aria-hidden="true">${esc(iniciales(t ? t.nombre : e.trabajadorNombre))}</span><div><h3>${esc(t ? t.nombre : e.trabajadorNombre || '—')}</h3><div class="meta">${esc(fFecha(e.fecha))} · ${esc(hace(e.fecha))}</div></div></div>
     <div class="ult">${(e.items || []).map(i => `<div><span class="u-txt"><b>${esc(i.prenda)}</b><span>${i.talla ? 'Talla ' + esc(i.talla) : 'Sin talla'}</span></span><b class="num">× ${esc(i.cantidad || 1)}</b></div>`).join('')}</div>
-    <section style="display:flex;flex-direction:column;gap:8px"><h4 class="section-t" style="margin:0">Firma</h4>${e.firma ? firmaSVG(e.firma, 'firma-big') : e.papel ? '<div class="empty">Esta entrega se anotó en la hoja de papel, antes de usar el software.</div>' : '<div class="empty">Esta entrega se guardó sin firma.</div>'}</section>
+    <section style="display:flex;flex-direction:column;gap:8px"><h4 class="section-t" style="margin:0">Firma</h4>${e.firma
+      ? firmaSVG(e.firma, 'firma-big') + (e.firmadoEl ? `<p class="sub" style="font-size:12.5px">Firmada el ${esc(horaLocal(e.firmadoEl))}</p>` : '')
+      : `${e.papel ? '<p class="sub">Se anotó en la hoja de papel. Si quieres, también puede firmar aquí.</p>' : '<div class="confirm warnbox"><b>Firma pendiente</b><span style="font-size:13px">Pídele al trabajador que firme aquí con el dedo y toca “Guardar firma”.</span></div>'}
+        <div class="pad-wrap"><canvas class="pad" id="detPad" aria-label="Recuadro para firmar" role="img"></canvas><span class="pad-line"></span><span class="pad-hint" id="detHint">El trabajador firma aquí con el dedo</span></div>
+        <div class="actions"><button type="button" class="btn" data-act="borrar-firma-det">Borrar</button><button type="button" class="btn primary" data-act="guardar-firma" data-id="${esc(e.id)}">${ic('check')}Guardar firma</button></div>`}</section>
     ${e.nota ? `<section class="field"><span class="section-t">Nota</span><p>${esc(e.nota)}</p></section>` : ''}
     <p class="sub" style="font-size:12.5px">Registrada el ${esc(e.creado ? horaLocal(e.creado) : '—')}${e.creadoPorEmail ? ' por ' + esc(e.creadoPorEmail) : ''}</p>
     ${t ? `<button type="button" class="btn" data-act="ficha" data-id="${esc(t.id)}">Ver ficha de ${esc(t.nombre.split(' ')[0])}</button>` : ''}
@@ -1294,14 +1348,15 @@ document.addEventListener('click', async ev => {
     const v = nav.getAttribute('href').slice(1);
     if (VIEWS.includes(v)) { ev.preventDefault(); go(v); return; }
   }
-  const el = ev.target.closest('[data-act],[data-pdiv],[data-ediv],[data-emodo],[data-gdiv],[data-goto],[data-tdiv],[data-gsel]');
+  const el = ev.target.closest('[data-act],[data-pdiv],[data-ediv],[data-egrupo],[data-emodo],[data-gdiv],[data-goto],[data-tdiv],[data-gsel]');
   if (!el) return;
   const d = el.dataset;
   if (d.pdiv) { S.f.personal.div = d.pdiv; S.f.personal.grupo = ''; $$('[data-pdiv]').forEach(b => b.setAttribute('aria-pressed', b.dataset.pdiv === d.pdiv)); refreshPersonal(); return; }
-  if (d.ediv) { S.f.entregas.div = d.ediv; $$('[data-ediv]').forEach(b => b.setAttribute('aria-pressed', b.dataset.ediv === d.ediv)); refreshEntregas(); return; }
+  if (el.hasAttribute('data-egrupo')) { S.f.entregas.grupo = d.egrupo; refreshEntregas(); return; }
+  if (d.ediv) { S.f.entregas.div = d.ediv; S.f.entregas.grupo = ''; $$('[data-ediv]').forEach(b => b.setAttribute('aria-pressed', b.dataset.ediv === d.ediv)); refreshEntregas(); return; }
   if (d.emodo) { S.f.entregas.modo = d.emodo; $$('[data-emodo]').forEach(b => b.setAttribute('aria-pressed', b.dataset.emodo === d.emodo)); refreshEntregas(); return; }
   if (d.gdiv) { S.f.gastos.div = d.gdiv; $$('[data-gdiv]').forEach(b => b.setAttribute('aria-pressed', b.dataset.gdiv === d.gdiv)); refreshGastos(); return; }
-  if (d.goto) { go(d.goto); return; }
+  if (d.goto) { if (d.modo) S.f.entregas.modo = d.modo; go(d.goto); return; }
   if (d.tdiv) { $('#tDiv').value = d.tdiv; $$('[data-tdiv]').forEach(b => b.setAttribute('aria-pressed', b.dataset.tdiv === d.tdiv)); $('#tGrupo').innerHTML = grupoOpts(d.tdiv, ''); $('#lGrupo').textContent = d.tdiv === 'kovacs' ? 'Sucursal' : 'Área'; return; }
   if (d.gsel) { $('#gDiv').value = d.gsel; $$('[data-gsel]').forEach(b => b.setAttribute('aria-pressed', b.dataset.gsel === d.gsel)); $('#eDiv').hidden = true; return; }
 
@@ -1321,6 +1376,16 @@ document.addEventListener('click', async ev => {
   if (a === 'pedir-baja') { S.sheet.args.confirm = 'baja'; renderSheet(); return; }
   if (a === 'pedir-eliminar') { S.sheet.args.confirm = 'eliminar'; renderSheet(); return; }
   if (a === 'pedir-eliminar-entrega') { S.sheet.args.confirm = true; renderSheet(); return; }
+  if (a === 'borrar-firma-det') { if (padApi) padApi.clear(); const h = $('#detHint'); if (h) h.hidden = false; return; }
+  if (a === 'guardar-firma') {
+    if (!padApi || padApi.empty()) { toast('Primero el trabajador tiene que firmar en el recuadro.'); return; }
+    const e0 = S.entregas.find(x => x.id === d.id);
+    const cambio = { firma: padApi.data(), papel: false, firmadoEl: new Date().toISOString() };
+    if (e0 && /^Firma pendiente/.test(e0.nota || '')) cambio.nota = 'Firmada después de la entrega.';
+    const ok = await guardar(() => S.db.doc('entregas/' + d.id).update(cambio), 'Firma guardada');
+    if (ok) { if (e0) Object.assign(e0, cambio); padApi = null; renderSheet(); refreshEntregas(); }
+    return;
+  }
   if (a === 'pedir-eliminar-gasto') { saveGastoDraft(); S.sheet.args.confirm = true; renderSheet(); wireGasto(); return; }
 
   if (a === 'confirmar-baja') {
@@ -1588,7 +1653,8 @@ function setConn(st) {
 }
 function onData() {
   renderView(false);
-  if (S.sheet && (S.sheet.kind === 'ficha' || S.sheet.kind === 'entregaDet')) renderSheet();
+  // No redibujar el detalle mientras alguien está firmando
+  if (S.sheet && (S.sheet.kind === 'ficha' || (S.sheet.kind === 'entregaDet' && !(padApi && !padApi.empty())))) renderSheet();
 }
 let reloadTimer = null;
 function reloadSoon(ms) { clearTimeout(reloadTimer); reloadTimer = setTimeout(() => { cargarTodo(); }, ms); }
