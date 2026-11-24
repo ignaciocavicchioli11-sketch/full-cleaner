@@ -1387,7 +1387,7 @@ function shEntregaDet({ id, confirm }) {
         <div class="pad-wrap"><canvas class="pad" id="detPad" aria-label="Recuadro para firmar" role="img"></canvas><span class="pad-line"></span><span class="pad-hint" id="detHint">El trabajador firma aquí con el dedo</span></div>
         <div class="actions"><button type="button" class="btn" data-act="borrar-firma-det">Borrar</button><button type="button" class="btn primary" data-act="guardar-firma" data-id="${esc(e.id)}">${ic('check')}Guardar firma</button></div>`}</section>
     ${e.nota ? `<section class="field"><span class="section-t">Nota</span><p>${esc(e.nota)}</p></section>` : ''}
-    <p class="sub" style="font-size:12.5px">Registrada el ${esc(e.creado ? horaLocal(e.creado) : '—')}${e.creadoPorEmail ? ' por ' + esc(e.creadoPorEmail) : ''}</p>
+    <p class="sub" style="font-size:12.5px">Registrada el ${esc(e.creado ? horaLocal(e.creado) : '—')}${e.creadoPorEmail ? ' por ' + esc(responsable(e.creadoPorEmail).nombre) : ''}</p>
     ${t ? `<button type="button" class="btn" data-act="ficha" data-id="${esc(t.id)}">Ver ficha de ${esc(t.nombre.split(' ')[0])}</button>` : ''}
     ${confirm ? `<div class="confirm"><b>¿Eliminar esta entrega?</b><span style="font-size:13px;color:var(--muted)">Se borra la entrega y su firma. No se puede deshacer.</span><div class="actions"><button type="button" class="btn danger solid" data-act="confirmar-eliminar-entrega" data-id="${esc(e.id)}">Eliminar entrega</button><button type="button" class="btn" data-act="entrega" data-id="${esc(e.id)}">Cancelar</button></div></div>`
       : `<div><button type="button" class="btn danger" data-act="pedir-eliminar-entrega" data-id="${esc(e.id)}">Eliminar entrega</button></div>`}
@@ -1486,7 +1486,7 @@ document.addEventListener('click', async ev => {
   if (a === 'guardar-firma') {
     if (!padApi || padApi.empty()) { toast('Primero el trabajador tiene que firmar en el recuadro.'); return; }
     const e0 = S.entregas.find(x => x.id === d.id);
-    const cambio = { firma: padApi.data(), papel: false, firmadoEl: new Date().toISOString() };
+    const cambio = { firma: padApi.data(), papel: false, firmadoEl: new Date().toISOString(), firmadoPorEmail: S.email || '' };
     if (e0 && /^Firma pendiente/.test(e0.nota || '')) cambio.nota = 'Firmada después de la entrega.';
     const ok = await guardar(() => S.db.doc('entregas/' + d.id).update(cambio), 'Firma guardada. Ya puedes descargar el comprobante.');
     if (ok) { if (e0) Object.assign(e0, cambio); padApi = null; renderSheet(); refreshEntregas(); }
@@ -1741,6 +1741,13 @@ function firmaPNG(f) {
   c2.getContext('2d').drawImage(c, x0, y0, cw, chh, 0, 0, cw, chh);
   return { url: c2.toDataURL('image/png'), w: cw, h: chh };
 }
+function responsable(email) {
+  const us = cfg().usuarios || {}, def = cfg().responsableDefault;
+  const k = String(email || '').toLowerCase();
+  if (k && us[k]) return us[k];
+  if (!k && def && us[def]) return us[def];
+  return k ? { nombre: k, cargo: '' } : null;
+}
 const folioDe = e => 'EPP-' + String(e.fecha || '').replace(/-/g, '') + '-' + String(e.id || '').replace(/^e-/, '').slice(0, 6).toUpperCase();
 const nombreArchivo = (t, e) => 'Registro-Entrega-EPP_' + norm(t.nombre).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '_' + e.fecha + '.pdf';
 
@@ -1838,7 +1845,16 @@ async function generarComprobante(e) {
   doc.text('Firma del trabajador · RUT ' + (rutFormato(t.rut) || 'no registrado'), M, y + 4.5);
   const firmadoEn = e.firmadoEl || e.creado;
   if (e.firma && firmadoEn) doc.text('Firmado digitalmente el ' + horaLocal(firmadoEn), M, y + 9);
-  if (e.creadoPorEmail) { doc.text('Entrega registrada por:', W - M - 70, y); doc.setTextColor(...TINTA); doc.text(String(e.creadoPorEmail), W - M - 70, y + 4.5); }
+  const resp = responsable(e.creadoPorEmail || e.firmadoPorEmail);
+  if (resp) {
+    const rx = 122;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...AZUL); doc.text('ENTREGADO POR', rx, y - 7);
+    doc.setFontSize(10.5); doc.setTextColor(...TINTA); doc.text(String(resp.nombre), rx, y);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...GRIS);
+    let yy = y + 4.5;
+    if (resp.cargo) { doc.text(String(resp.cargo), rx, yy); yy += 4.5; }
+    doc.text(EMPRESA.nombre, rx, yy);
+  }
 
   // Pie de página
   doc.setFontSize(7.5); doc.setTextColor(150, 158, 166);
