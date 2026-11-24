@@ -78,6 +78,9 @@ img { max-width: 100%; }
 .brand-logo img { width: 200px; max-width: 100%; height: auto; display: block; }
 .brand-logo span { font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--side-muted); padding-left: 2px; }
 .top-logo { height: 37px; width: auto; display: block; }
+a.brand-logo, .top-logo-link { text-decoration: none; border-radius: 10px; display: flex; }
+a.brand-logo:hover img, .top-logo-link:hover img { opacity: .85; }
+.top-logo-link { min-height: 44px; align-items: center; }
 .login-logo { display: block; align-self: center; }
 .login-logo img { width: 280px; max-width: 100%; height: auto; display: block; }
 .login-tag { margin: -6px 0 4px; text-align: center; font-size: 11.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
@@ -450,7 +453,7 @@ canvas.pad { display: block; width: 100%; aspect-ratio: 700 / 420; background: v
 
 <div class="app" id="appShell" hidden>
   <aside class="side" aria-label="Menú">
-    <div class="brand-logo"><img src="logo-claro.png" alt="Full Cleaner · Expertos en limpieza" width="200" height="63"><span>Gestión interna</span></div>
+    <a class="brand-logo" href="#inicio" title="Ir al inicio" aria-label="Full Cleaner · Ir al inicio"><img src="logo-claro.png" alt="" width="200" height="63"><span>Gestión interna</span></a>
     <button type="button" class="btn-new" data-act="nueva-entrega"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Registrar entrega</button>
     <nav class="side-nav" aria-label="Secciones">
       <a href="#inicio" data-nav="inicio"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/></svg>Panel</a>
@@ -466,7 +469,7 @@ canvas.pad { display: block; width: 100%; aspect-ratio: 700 / 420; background: v
   </aside>
 
   <header class="topbar">
-    <img class="top-logo" src="logo-claro.png" alt="Full Cleaner · Expertos en limpieza" width="118" height="37">
+    <a class="top-logo-link" href="#inicio" title="Ir al inicio" aria-label="Full Cleaner · Ir al inicio"><img class="top-logo" src="logo-claro.png" alt="" width="118" height="37"></a>
     <a class="icon-btn" href="#ajustes" aria-label="Ajustes" style="color: inherit"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></a>
   </header>
 
