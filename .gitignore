@@ -2,3 +2,5 @@
 supabase/.temp/
 supabase/.branches/
 *.local
+.claude/
+_prueba*.html

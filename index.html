@@ -1382,6 +1382,7 @@ function shEntregaDet({ id, confirm }) {
     <div class="ult">${(e.items || []).map(i => `<div><span class="u-txt"><b>${esc(i.prenda)}</b><span>${i.talla ? 'Talla ' + esc(i.talla) : 'Sin talla'}</span></span><b class="num">× ${esc(i.cantidad || 1)}</b></div>`).join('')}</div>
     <section style="display:flex;flex-direction:column;gap:8px"><h4 class="section-t" style="margin:0">Firma</h4>${e.firma
       ? firmaSVG(e.firma, 'firma-big') + (e.firmadoEl ? `<p class="sub" style="font-size:12.5px">Firmada el ${esc(horaLocal(e.firmadoEl))}</p>` : '')
+        + `<button type="button" class="btn primary big block" data-act="pdf-entrega" data-id="${esc(e.id)}">${ic('dl')}Descargar comprobante (PDF)</button><p class="sub" style="font-size:12.5px;margin-top:-2px">Registro de Entrega de EPP con el logo de Full Cleaner, los datos del trabajador y su firma.</p>`
       : `${!firmaPendiente(e) ? `<p class="sub">${e.papel ? 'Se anotó en la hoja de papel.' : 'Esta entrega no se firmó.'} Si quieres, también puede firmar aquí.</p>` : '<div class="confirm warnbox"><b>Firma pendiente</b><span style="font-size:13px">Pídele al trabajador que firme aquí con el dedo y toca “Guardar firma”.</span></div>'}
         <div class="pad-wrap"><canvas class="pad" id="detPad" aria-label="Recuadro para firmar" role="img"></canvas><span class="pad-line"></span><span class="pad-hint" id="detHint">El trabajador firma aquí con el dedo</span></div>
         <div class="actions"><button type="button" class="btn" data-act="borrar-firma-det">Borrar</button><button type="button" class="btn primary" data-act="guardar-firma" data-id="${esc(e.id)}">${ic('check')}Guardar firma</button></div>`}</section>
@@ -1472,13 +1473,22 @@ document.addEventListener('click', async ev => {
   if (a === 'pedir-baja') { S.sheet.args.confirm = 'baja'; renderSheet(); return; }
   if (a === 'pedir-eliminar') { S.sheet.args.confirm = 'eliminar'; renderSheet(); return; }
   if (a === 'pedir-eliminar-entrega') { S.sheet.args.confirm = true; renderSheet(); return; }
+  if (a === 'pdf-entrega') {
+    const e = S.entregas.find(x => x.id === d.id);
+    if (!e || !e.firma) { toast('Esta entrega todavía no tiene firma.'); return; }
+    el.disabled = true; const txt0 = el.innerHTML; el.innerHTML = 'Preparando el PDF…';
+    try { await generarComprobante(e); }
+    catch (err) { console.error(err); toast('No se pudo generar el PDF. Revisa tu conexión e inténtalo de nuevo.'); }
+    el.disabled = false; el.innerHTML = txt0;
+    return;
+  }
   if (a === 'borrar-firma-det') { if (padApi) padApi.clear(); const h = $('#detHint'); if (h) h.hidden = false; return; }
   if (a === 'guardar-firma') {
     if (!padApi || padApi.empty()) { toast('Primero el trabajador tiene que firmar en el recuadro.'); return; }
     const e0 = S.entregas.find(x => x.id === d.id);
     const cambio = { firma: padApi.data(), papel: false, firmadoEl: new Date().toISOString() };
     if (e0 && /^Firma pendiente/.test(e0.nota || '')) cambio.nota = 'Firmada después de la entrega.';
-    const ok = await guardar(() => S.db.doc('entregas/' + d.id).update(cambio), 'Firma guardada');
+    const ok = await guardar(() => S.db.doc('entregas/' + d.id).update(cambio), 'Firma guardada. Ya puedes descargar el comprobante.');
     if (ok) { if (e0) Object.assign(e0, cambio); padApi = null; renderSheet(); refreshEntregas(); }
     return;
   }
@@ -1698,6 +1708,153 @@ function descargarGastos() {
   const rows = [['Fecha', 'Proveedor', 'RUT proveedor', 'N° factura', 'Categoría', 'División', 'Neto', 'IVA', 'Total', 'Detalle', 'Revisado']];
   lista.forEach(g => rows.push([fCorta(g.fecha), g.proveedor, g.rutProveedor, g.numero, g.categoria, DIV[g.division] ? DIV[g.division].nombre : '', g.neto || 0, g.iva || 0, g.total || 0, g.detalle, g.revisado ? 'Sí' : 'No']));
   bajar(`gastos-full-cleaner-${f.mes === 'todos' ? 'todos' : f.mes}.csv`, csv(rows));
+}
+
+/* ================= Comprobante PDF: Registro de Entrega de EPP ================= */
+const EMPRESA = { nombre: 'Full Cleaner SpA', rut: '76.848.712-K' };
+let jsPDFp = null;
+function cargarJsPDF() {
+  if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+  if (!jsPDFp) jsPDFp = new Promise((res, rej) => {
+    const sc = document.createElement('script');
+    sc.src = 'vendor/jspdf.umd.min.js';
+    sc.onload = () => (window.jspdf && window.jspdf.jsPDF) ? res(window.jspdf.jsPDF) : rej(new Error('jsPDF no disponible'));
+    sc.onerror = () => { jsPDFp = null; rej(new Error('No se pudo cargar jsPDF')); };
+    document.head.appendChild(sc);
+  });
+  return jsPDFp;
+}
+const cargarImg = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+function firmaPNG(f) {
+  const w = Number(f.w) || 700, h = Number(f.h) || 240;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d');
+  x.fillStyle = '#ffffff'; x.fillRect(0, 0, w, h);
+  x.strokeStyle = '#111111'; x.lineWidth = 5; x.lineCap = 'round'; x.lineJoin = 'round';
+  x.stroke(new Path2D(String(f.d || '')));
+  // Recortar al área dibujada para que la firma quede pegada a la línea
+  const px = x.getImageData(0, 0, w, h).data; let x0 = w, y0 = h, x1 = -1, y1 = -1;
+  for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) { if (px[(yy * w + xx) * 4] < 200) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; } }
+  if (x1 < 0) return { url: c.toDataURL('image/png'), w, h };
+  const pad = 12; x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(w - 1, x1 + pad); y1 = Math.min(h - 1, y1 + pad);
+  const cw = x1 - x0 + 1, chh = y1 - y0 + 1, c2 = document.createElement('canvas'); c2.width = cw; c2.height = chh;
+  c2.getContext('2d').drawImage(c, x0, y0, cw, chh, 0, 0, cw, chh);
+  return { url: c2.toDataURL('image/png'), w: cw, h: chh };
+}
+const folioDe = e => 'EPP-' + String(e.fecha || '').replace(/-/g, '') + '-' + String(e.id || '').replace(/^e-/, '').slice(0, 6).toUpperCase();
+const nombreArchivo = (t, e) => 'Registro-Entrega-EPP_' + norm(t.nombre).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '_' + e.fecha + '.pdf';
+
+async function generarComprobante(e) {
+  const t = trabPorId(e.trabajadorId) || { nombre: e.trabajadorNombre || '', division: e.division, grupo: e.grupo, cargo: '', rut: '' };
+  const JsPDF = await cargarJsPDF();
+  const doc = new JsPDF({ unit: 'mm', format: 'a4' });
+  const W = 210, M = 18, AZUL = [0, 124, 173], GRIS = [95, 105, 115], TINTA = [20, 26, 32];
+  let y = 14;
+
+  // Encabezado: logo y título
+  try {
+    const logo = await cargarImg('logo.png');
+    const lw = 62, lh = lw * logo.naturalHeight / logo.naturalWidth;
+    doc.addImage(logo, 'PNG', M, y, lw, lh, undefined, 'FAST');
+  } catch (_) {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.setTextColor(...TINTA); doc.text('Full Cleaner', M, y + 10);
+  }
+  doc.setTextColor(...TINTA); doc.setFont('helvetica', 'bold'); doc.setFontSize(15);
+  doc.text('REGISTRO DE ENTREGA DE EPP', W - M, y + 6, { align: 'right' });
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...GRIS);
+  doc.text('Comprobante de entrega de elementos de protección', W - M, y + 11.5, { align: 'right' });
+  doc.text('personal y ropa de trabajo', W - M, y + 15.5, { align: 'right' });
+  doc.setFont('helvetica', 'bold'); doc.setTextColor(...TINTA);
+  doc.text('N° ' + folioDe(e), W - M, y + 21, { align: 'right' });
+  y = 42;
+  doc.setDrawColor(...AZUL); doc.setLineWidth(0.8); doc.line(M, y, W - M, y);
+  y += 8;
+
+  const seccion = titulo => {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...AZUL);
+    doc.text(titulo, M, y); y += 2;
+    doc.setDrawColor(215, 222, 228); doc.setLineWidth(0.3); doc.line(M, y, W - M, y); y += 6;
+  };
+  const fila = (k, v) => {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...GRIS); doc.text(k, M, y);
+    doc.setTextColor(...TINTA); doc.setFont('helvetica', 'bold');
+    const lineas = doc.splitTextToSize(String(v || '—'), W - M - (M + 48)); doc.text(lineas, M + 48, y);
+    y += 6 * Math.max(1, lineas.length);
+  };
+
+  seccion('EMPLEADOR');
+  fila('Razón social', EMPRESA.nombre);
+  fila('RUT', EMPRESA.rut);
+  y += 3;
+  seccion('TRABAJADOR');
+  fila('Nombre', t.nombre);
+  fila('RUT', rutFormato(t.rut) || 'No registrado');
+  fila('Cargo', t.cargo || '—');
+  fila('Cliente / división', DIV[t.division] ? DIV[t.division].nombre : '—');
+  fila('Área o sucursal', (t.grupo || '—') + (t.lugar ? ' · ' + t.lugar : ''));
+  y += 3;
+  seccion('ENTREGA');
+  const dF = parseISO(e.fecha);
+  fila('Fecha de entrega', dF ? `${DIA_L[dF.getDay()]} ${dF.getDate()} de ${MES_L[dF.getMonth()]} de ${dF.getFullYear()}` : fCorta(e.fecha));
+  y += 2;
+
+  // Tabla de elementos entregados
+  const cx = [M, M + 26, W - M - 34], anchoT = W - 2 * M;
+  doc.setFillColor(236, 242, 246); doc.rect(M, y - 5, anchoT, 8, 'F');
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...TINTA);
+  doc.text('Cantidad', cx[0] + 3, y); doc.text('Elemento entregado', cx[1] + 3, y); doc.text('Talla', cx[2] + 3, y);
+  y += 3;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5);
+  (e.items || []).forEach(i => {
+    y += 6.5;
+    doc.text(String(i.cantidad || 1), cx[0] + 3, y);
+    doc.text(String(i.prenda || ''), cx[1] + 3, y);
+    doc.text(String(i.talla || '—'), cx[2] + 3, y);
+    doc.setDrawColor(225, 230, 235); doc.setLineWidth(0.2); doc.line(M, y + 2.5, W - M, y + 2.5);
+  });
+  y += 12;
+
+  // Declaración del trabajador
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(...TINTA);
+  const declaracion = `Declaro haber recibido de ${EMPRESA.nombre}, en forma gratuita y en buen estado, los elementos de protección personal y la ropa de trabajo detallados en este documento. Me comprometo a usarlos correctamente durante mi jornada laboral, a cuidarlos y a solicitar su reposición cuando se deterioren o pierdan su eficacia, de acuerdo con el artículo 53 del D.S. N° 594 y el artículo 68 de la Ley N° 16.744.`;
+  const lineasD = doc.splitTextToSize(declaracion, anchoT);
+  doc.text(lineasD, M, y);
+  y += lineasD.length * 4.6 + 10;
+
+  // Firma
+  if (y > 220) { doc.addPage(); y = 24; }
+  const fw = 75, maxH = 32;
+  if (e.firma) {
+    const img = firmaPNG(e.firma);
+    let iw = fw, ih = fw * img.h / img.w;
+    if (ih > maxH) { ih = maxH; iw = maxH * img.w / img.h; }
+    doc.addImage(img.url, 'PNG', M + (fw - iw) / 2, y + (maxH - ih), iw, ih, undefined, 'FAST');
+  }
+  y += maxH + 2;
+  doc.setDrawColor(...TINTA); doc.setLineWidth(0.4); doc.line(M, y, M + fw, y);
+  y += 5;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.text(t.nombre || '', M, y);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...GRIS);
+  doc.text('Firma del trabajador · RUT ' + (rutFormato(t.rut) || 'no registrado'), M, y + 4.5);
+  const firmadoEn = e.firmadoEl || e.creado;
+  if (e.firma && firmadoEn) doc.text('Firmado digitalmente el ' + horaLocal(firmadoEn), M, y + 9);
+  if (e.creadoPorEmail) { doc.text('Entrega registrada por:', W - M - 70, y); doc.setTextColor(...TINTA); doc.text(String(e.creadoPorEmail), W - M - 70, y + 4.5); }
+
+  // Pie de página
+  doc.setFontSize(7.5); doc.setTextColor(150, 158, 166);
+  doc.text(`Documento generado por el sistema de gestión de ${EMPRESA.nombre} el ${horaLocal(new Date().toISOString())} · ID ${e.id}`, W / 2, 287, { align: 'center' });
+
+  // Guardar: en el celular se ofrece compartir/guardar; en el computador se descarga
+  const nombre = nombreArchivo(t, e);
+  const blob = doc.output('blob');
+  try {
+    const file = new File([blob], nombre, { type: 'application/pdf' });
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'Registro de Entrega de EPP' });
+      return;
+    }
+  } catch (err) { if (err && err.name === 'AbortError') return; }
+  doc.save(nombre);
 }
 
 /* ================= Conexión con Supabase ================= */
